@@ -1,123 +1,90 @@
 package app;
-	import java.util.Scanner;
 
-	import bean.Customer;
-	import bean.Event;
-	import bean.Venue;
-	import service.BookingSystemServiceProviderImpl;
+import dao.BookingSystemService;
+import bean.Booking;
+import bean.Event;
+import exception.EventNotFoundException;
+import exception.InvalidBookingIDException;
 
-	public class TicketBookingSystem {
-		
-		public static void main(String[] args) {
-	        Scanner sc = new Scanner(System.in);
-	        BookingSystemServiceProviderImpl system = new BookingSystemServiceProviderImpl();
+import java.util.List;
+import java.util.Scanner;
 
-	        while (true) {
-	            System.out.println("\n----- Ticket Booking System Menu -----");
-	            System.out.println("1. Create Event");
-	            System.out.println("2. Book Tickets");
-	            System.out.println("3. Cancel Tickets");
-	            System.out.println("4. Get Available Seats");
-	            System.out.println("5. Get Event Details");
-	            System.out.println("6. Get Booking Details");
-	            System.out.println("7. Exit");
-	            System.out.print("Enter your choice: ");
+public class TicketBookingSystem {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        BookingSystemService service = new BookingSystemService();
 
-	            int choice = sc.nextInt();
-	            sc.nextLine(); 
+        while (true) {
+            displayMenu();
+            try {
+				try {
+				    int choice = Integer.parseInt(scanner.nextLine());
+				    switch (choice) {
+				        case 1 -> handleBooking(scanner, service);
+				        case 2 -> handleCancellation(scanner, service);
+				        case 3 -> showEvents(service.getAllEvents());
+				        case 4 -> showBookings(service.getAllBookings());
+				        case 5 -> {
+				            System.out.println("Exiting system. Goodbye!");
+				            return;
+				        }
+				        default -> System.out.println("Invalid option.");
+				    }
+				} catch (EventNotFoundException | InvalidBookingIDException e) {
+				    System.out.println(e.getMessage());
+				} catch (IllegalArgumentException e) {
+				    System.out.println(e.getMessage());
+				} catch (Exception e) {
+				    System.out.println("Unexpected Error: " + e.getMessage());
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+    }
 
-	            switch (choice) {
+    private static void displayMenu() {
+        System.out.println("\n--- Ticket Booking System ---");
+        System.out.println("1. Book Tickets");
+        System.out.println("2. Cancel Booking");
+        System.out.println("3. Show Events");
+        System.out.println("4. Show All Bookings");
+        System.out.println("5. Exit");
+        System.out.print("Enter choice: ");
+    }
 
-	                case 1:
-	                    System.out.print("Enter event name: ");
-	                    String eventName = sc.nextLine();
+    private static void handleBooking(Scanner scanner, BookingSystemService service) throws EventNotFoundException {
+        System.out.print("Enter event name: ");
+        String eventName = scanner.nextLine();
 
-	                    System.out.print("Enter event date (YYYY-MM-DD): ");
-	                    String date = sc.nextLine();
+        System.out.print("Enter number of tickets: ");
+        int numTickets = Integer.parseInt(scanner.nextLine());
 
-	                    System.out.print("Enter event time (HH:MM): ");
-	                    String time = sc.nextLine();
+        Booking booking = service.bookTickets(eventName, numTickets);
+        System.out.println("Booking successful!");
+        booking.displayBooking();
+    }
 
-	                    System.out.print("Enter venue name: ");
-	                    String venueName = sc.nextLine();
+    private static void handleCancellation(Scanner scanner, BookingSystemService service) throws InvalidBookingIDException {
+        System.out.print("Enter booking ID: ");
+        int bookingId = Integer.parseInt(scanner.nextLine());
 
-	                    System.out.print("Enter venue address: ");
-	                    String address = sc.nextLine();
+        service.cancelBooking(bookingId);
+        System.out.println("Booking cancelled successfully.");
+    }
 
-	                    System.out.print("Enter total seats: ");
-	                    int totalSeats = sc.nextInt();
+    private static void showEvents(List<Event> events) {
+        System.out.println("\nAvailable Events:");
+        events.forEach(Event::displayEventDetails);
+    }
 
-	                    System.out.print("Enter ticket price: ");
-	                    double ticketPrice = sc.nextDouble();
-
-	                    sc.nextLine(); // consume newline
-	                    System.out.print("Enter event type (Movie/Sports/Concert): ");
-	                    String eventType = sc.nextLine();
-
-	                    Venue venue = new Venue(venueName, address);
-	                    system.createEvent(eventName, date, time, totalSeats, ticketPrice, eventType, venue);
-	                    break;
-
-	                case 2:
-	                    System.out.print("Enter event name to book: ");
-	                    String bookEvent = sc.nextLine();
-
-	                    System.out.print("Enter number of tickets: ");
-	                    int numTickets = sc.nextInt();
-	                    sc.nextLine(); // consume newline
-
-	                    Customer[] customers = new Customer[numTickets];
-	                    for (int i = 0; i < numTickets; i++) {
-	                        System.out.println("Enter details for Customer " + (i + 1));
-	                        System.out.print("Name: ");
-	                        String name = sc.nextLine();
-	                        System.out.print("Email: ");
-	                        String email = sc.nextLine();
-	                        System.out.print("Phone: ");
-	                        String phone = sc.nextLine();
-	                        customers[i] = new Customer(name, email, phone);
-	                    }
-
-	                    system.bookTickets(bookEvent, numTickets, customers);
-	                    break;
-
-	                case 3:
-	                    System.out.print("Enter booking ID to cancel: ");
-	                    int bookingId = sc.nextInt();
-	                    system.cancelBooking(bookingId);
-	                    break;
-
-	                case 4:
-	                    int availableSeats = system.getAvailableNoOfTickets();
-	                    System.out.println("Total Available Tickets: " + availableSeats);
-	                    break;
-
-	                case 5:
-	                    bean.Event[] events = system.getEventDetails();
-	                    if (events.length == 0) {
-	                        System.out.println("No events found.");
-	                    } else {
-	                        for (Event e : events) {
-	                            e.displayEventDetails();
-	                        }
-	                    }
-	                    break;
-
-	                case 6:
-	                    System.out.print("Enter booking ID: ");
-	                    int id = sc.nextInt();
-	                    system.getBookingDetails(id);
-	                    break;
-
-	                case 7:
-	                    System.out.println("Exiting Ticket Booking System. Thank you!");
-	                    sc.close();
-	                    return;
-
-	                default:
-	                    System.out.println("Invalid choice. Please try again.");
-	            }
-	        }
-	    }
-
-	}
+    private static void showBookings(List<Booking> bookings) {
+        System.out.println("\nAll Bookings:");
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings yet.");
+        } else {
+            bookings.forEach(Booking::displayBooking);
+        }
+    }
+}
